@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: abastecimento-exemplo
+    env: node
+    buildCommand: cd backend && npm install
+    startCommand: cd backend && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: MICROSOFT_TENANT_ID
+        sync: false
+      - key: MICROSOFT_CLIENT_ID
+        sync: false
+      - key: MICROSOFT_CLIENT_SECRET
+        sync: false
+      - key: SHAREPOINT_SITE_ID
+        sync: false
+      - key: SHAREPOINT_ROOT_FOLDER
+        value: "Departamento de Frotas/SETOR DE FROTA/SISTEMA ABASTECIMENTO"
