@@ -1,0 +1,16 @@
+# Ambiente
+.env
+*.env
+
+# Node
+node_modules/
+npm-debug.log*
+
+# Editores / SO
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
