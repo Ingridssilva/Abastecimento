@@ -1,0 +1,13 @@
+{
+  "name": "sistema-abastecimento-frontend",
+  "version": "2.0.0",
+  "description": "Frontend — Sistema de Abastecimento Empresa Exemplo",
+  "scripts": {
+    "dev": "npx live-server --port=5500 --host=localhost .",
+    "serve": "npx serve -p 5500 ."
+  },
+  "devDependencies": {
+    "live-server": "^1.2.2",
+    "serve": "^14.2.3"
+  }
+}

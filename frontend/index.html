@@ -1,0 +1,1610 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#111111">
+<title>Empresa Exemplo — Sistema de Abastecimento</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="loading" id="ld"><div class="spinner"></div></div>
+<div class="notif" id="notif"></div>
+
+<!-- ═══════════════════════ LOGIN ═══════════════════════ -->
+<div id="sidebar-overlay" class="sidebar-overlay" onclick="closeSidebarMobile()"></div>
+<div id="login-screen">
+  <div class="lc">
+    <div class="lc-head">
+      <div class="lc-logo">
+        <img src="logo.png" alt="" onerror="this.onerror=null;this.src='logo.svg';this.onerror=function(){this.style.display='none';this.parentElement.innerHTML='⚡'}">
+      </div>
+      <h1>Empresa Exemplo</h1>
+      <p>Sistema de Gestão de Abastecimento v3.0</p>
+    </div>
+    <div class="lc-body">
+
+      <div class="panel active" id="panel-role">
+        <p style="color:var(--text3);font-size:.85rem;margin-bottom:16px">Selecione seu perfil:</p>
+        <button class="rbt" onclick="showPanel('panel-driver')">
+          <span class="ico">🚛</span>
+          <span><strong>Motorista / Operador</strong><small>Faça requisições de abastecimento</small></span>
+        </button>
+        <button class="rbt" onclick="showPanel('panel-operator')">
+          <span class="ico">🛢️</span>
+          <span><strong>Operador de Bombona</strong><small>Solicite abastecimento da sua bombona</small></span>
+        </button>
+        <button class="rbt" onclick="showPanel('panel-supervisor')">
+          <span class="ico">👨‍💼</span>
+          <span><strong>Supervisor / Gestor</strong><small>Gerencie e aprove requisições</small></span>
+        </button>
+      </div>
+
+      <!-- Login Operador de Bombona -->
+      <div class="panel" id="panel-operator">
+        <button class="back-btn" onclick="showPanel('panel-role')">← Voltar</button>
+        <p style="color:var(--text3);font-size:.85rem;margin-bottom:14px">Informe sua matrícula e senha:</p>
+        <div class="fg" style="margin-bottom:12px">
+          <label style="font-size:.78rem;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.05em">Matrícula</label>
+          <input id="op-matricula" placeholder="Ex: 00123" autocomplete="username" style="text-transform:uppercase">
+        </div>
+        <div class="fg" style="margin-bottom:16px">
+          <label style="font-size:.78rem;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.05em">Senha</label>
+          <input id="op-password" type="password" placeholder="Senha padrão" autocomplete="current-password">
+        </div>
+        <div id="op-login-error" style="color:var(--red);font-size:.82rem;margin-bottom:10px;display:none"></div>
+        <button class="btn btn-accent btn-full" onclick="loginOperator()">🛢️ Entrar →</button>
+        <p style="margin-top:12px;font-size:.72rem;color:var(--text3);text-align:center">Senha padrão: 3 primeiras letras do nome + EMPRESA</p>
+      </div>
+
+      <div class="panel" id="panel-driver">
+        <button class="back-btn" onclick="showPanel('panel-role')">← Voltar</button>
+        <p style="color:var(--text3);font-size:.85rem;margin-bottom:14px">Selecione seu nome:</p>
+        <div class="fg" style="margin-bottom:14px">
+          <select id="sel-driver"><option value="">Selecione...</option></select>
+        </div>
+        <button class="btn btn-accent btn-full" onclick="loginDriver()">Entrar →</button>
+      </div>
+
+      <div class="panel" id="panel-supervisor">
+        <button class="back-btn" onclick="showPanel('panel-role')">← Voltar</button>
+        <p style="color:var(--text3);font-size:.85rem;margin-bottom:18px">Use sua conta <b style="color:var(--orange)">@empresaexemplo.com.br</b> para entrar.</p>
+        <button class="ms-btn" onclick="loginMicrosoft()" id="btn-ms-login">
+          <svg width="20" height="20" viewBox="0 0 21 21" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="1" y="1" width="9" height="9" fill="#F25022"/>
+            <rect x="11" y="1" width="9" height="9" fill="#7FBA00"/>
+            <rect x="1" y="11" width="9" height="9" fill="#00A4EF"/>
+            <rect x="11" y="11" width="9" height="9" fill="#FFB900"/>
+          </svg>
+          Entrar com Microsoft
+        </button>
+        <div id="ms-login-status" style="margin-top:14px;font-size:.82rem;color:var(--text3);text-align:center;min-height:20px"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ APP ═══════════════════════ -->
+<div id="app">
+  <div id="sb-overlay" onclick="toggleSidebar()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:499;backdrop-filter:blur(2px)"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-head">
+      <div class="sb-icon">
+        <img src="logo.png" alt="" onerror="this.onerror=null;this.src='logo.svg';this.onerror=function(){this.style.display='none';this.parentElement.innerHTML='⚡'}">
+      </div>
+      <div class="sb-title">Empresa Exemplo<small>Abastecimento v3.0</small></div>
+    </div>
+    <div class="sb-user">
+      <div class="sb-name" id="sb-name">—</div>
+      <div class="sb-role" id="sb-role">—</div>
+    </div>
+    <nav class="sb-nav">
+      <div class="nav-sec">
+        <div class="nav-lbl">Principal</div>
+        <button class="ni active" onclick="go('dashboard')">📊 Dashboard</button>
+        <button class="ni" onclick="go('requests')">📋 Requisições <span class="bdg hidden" id="bdg">0</span></button>
+        <!-- Bombonas: só aparece para operador de bombona -->
+        <button class="ni hidden" id="nav-bombonas-btn" onclick="go('bombonas')">🛢️ Minhas Bombonas</button>
+      </div>
+      <div class="nav-sec hidden" id="nav-sup">
+        <div class="nav-lbl">Gestão</div>
+        <button class="ni" onclick="go('fuel-records')">⛽ Abastecimentos</button>
+        <button class="ni" onclick="go('bombonas')">🛢️ Bombonas</button>
+        <button class="ni" onclick="go('transfer-records')">🛢️ Transf. Bombonas</button>
+        <button class="ni" onclick="go('vehicles')">🚗 Frota</button>
+        <button class="ni" onclick="go('fuel-prices')">💰 Preços</button>
+        <button class="ni" onclick="go('stations')">⛽ Postos</button>
+        <button class="ni" onclick="go('operators')">🛢️ Operadores</button>
+        <button class="ni" onclick="go('audit')">🔍 Auditoria</button>
+        <button class="ni" onclick="go('fuel-consumption')">📈 Consumo</button>
+        <button class="ni" onclick="go('reports')">📊 Relatórios</button>
+        <button class="ni" onclick="go('relatorio-mensal')">📅 Mensal</button>
+        <button class="ni" onclick="go('relatorio-veiculo')">🚗 Por Veículo</button>
+        <button class="ni" onclick="go('relatorio-posto')">⛽ Por Posto</button>
+        <button class="ni" onclick="go('relatorio-bombona')">🛢️ Bombonas</button>
+        <button class="ni" onclick="go('relatorio-localidade')">📍 Localidade</button>
+        <button class="ni" onclick="go('auditoria-litros')" style="color:#ef4444;font-weight:600">🚨 Auditoria de Litros</button>
+        <button class="ni" onclick="go('km-rodado')" style="color:var(--orange);font-weight:600">🛣️ KM Rodado</button>
+        <button class="ni" onclick="openRetroativo()" style="color:var(--orange);font-weight:600">🕐 Lançamento Retroativo</button>
+      </div>
+    </nav>
+    <div class="sb-foot"><button onclick="logout()">🚪 Sair do Sistema</button></div>
+  </aside>
+
+  <!-- Content -->
+  <main class="content">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="hamburger" id="btn-menu" onclick="toggleSidebar()" title="Menu">☰</button>
+        <span class="topbar-title" id="pg-title">Dashboard</span>
+      </div>
+      <div class="topbar-r">
+        <span class="topbar-date" id="cur-date"></span>
+        <button class="btn btn-accent btn-sm" id="topbar-new-req" onclick="openNewReq()">+ Nova Requisição</button>
+      </div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <section class="screen active" id="screen-dashboard">
+      <div class="ph"><h2>Dashboard</h2><p>Resumo dos últimos 30 dias</p></div>
+      <div class="sg">
+        <button class="sc pending"   onclick="go('requests')"><span class="si">⏳</span><span class="sn" id="st-pending">0</span><span class="sl">Pendentes</span></button>
+        <button class="sc signed"    onclick="go('requests')"><span class="si">✅</span><span class="sn" id="st-signed">0</span><span class="sl">Aprovadas</span></button>
+        <button class="sc completed" onclick="go('fuel-records')"><span class="si">✔️</span><span class="sn" id="st-completed">0</span><span class="sl">Concluídas</span></button>
+        <button class="sc rejected"  style="cursor:default"><span class="si">❌</span><span class="sn" id="st-rejected">0</span><span class="sl">Rejeitadas</span></button>
+        <button class="sc bombs"     onclick="go('bombonas')"><span class="si">🛢️</span><span class="sn" id="st-bombs">0</span><span class="sl">Bombonas Ativas</span></button>
+        <button class="sc total"     style="cursor:default">
+          <span class="si">💰</span>
+          <span class="sn" id="st-cost-mes" style="font-size:1rem">—</span>
+          <span class="sl">Custo do Mês</span>
+          <span id="st-cost-diff" style="font-size:.68rem;margin-top:2px"></span>
+        </button>
+      </div>
+
+      <!-- Alerta: Requisições aprovadas sem conclusão há +4h -->
+      <div class="card hidden" id="st-atrasadas-box" style="border-left:4px solid var(--yellow);margin-bottom:12px;padding:12px 16px">
+        <span style="font-weight:700;color:var(--yellow)">⚠️ <span id="st-atrasadas">0</span> requisição(ões) aprovada(s) há mais de 4h aguardando conclusão</span>
+        <button class="btn btn-outline btn-xs" style="margin-left:12px" onclick="go('requests');setTimeout(()=>{$('f-status').value='signed';renderReqs();},100)">Ver agora</button>
+      </div>
+
+      <!-- Alertas de bombonas críticas (< 20%) -->
+      <div class="card hidden" id="dash-bomb-alertas" style="border-left:4px solid var(--red);margin-bottom:12px">
+        <div class="ch"><span class="ct" style="color:var(--red)">🚨 Bombonas com Saldo Crítico (&lt;20%)</span><button class="btn btn-outline btn-xs" onclick="go('bombonas')">Ver bombonas</button></div>
+        <div id="dash-bomb-alertas-list"></div>
+      </div>
+
+      <div class="card">
+        <div class="ch"><span class="ct">🕐 Atividade Recente</span><button class="btn btn-outline btn-sm" onclick="go('requests')">Ver todas</button></div>
+        <div class="tw"><table>
+          <thead><tr><th>ID</th><th>Motorista</th><th>Placa</th><th>Combustível</th><th>Status</th><th>Data</th><th>Valor</th><th>Ações</th></tr></thead>
+          <tbody id="tb-recent"></tbody>
+        </table></div>
+      </div>
+    </section>
+
+    <!-- REQUISIÇÕES -->
+    <section class="screen" id="screen-requests">
+      <div class="ph"><h2>Requisições de Abastecimento</h2><p>Gerencie todas as solicitações</p></div>
+      <div class="card">
+        <div class="ch">
+          <span class="ct">📋 Lista</span>
+          <div class="ca">
+            <button class="btn btn-outline btn-sm" onclick="exportXLS('req')">⬇️ Excel</button>
+            <button class="btn btn-accent btn-sm" onclick="openNewReq()">+ Nova</button>
+          </div>
+        </div>
+        <div class="fb">
+          <div class="si-wrap"><input class="fi" id="f-search" placeholder="Buscar..." oninput="renderReqs()"></div>
+          <select class="fi" id="f-status" onchange="renderReqs()">
+            <option value="">Todos status</option>
+            <option value="pending">Pendente</option>
+            <option value="signed">Aprovada</option>
+            <option value="completed">Concluída</option>
+            <option value="rejected">Rejeitada</option>
+            <option value="voided">🚫 Anulada</option>
+          </select>
+          <select class="fi" id="f-loc" onchange="renderReqs()"><option value="">Todas localidades</option></select>
+          <select class="fi" id="f-stn" onchange="renderReqs()"><option value="">Todos postos</option></select>
+          <input class="fi" type="date" id="f-start" onchange="renderReqs()">
+          <input class="fi" type="date" id="f-end" onchange="renderReqs()">
+          <button class="btn btn-outline btn-sm" onclick="document.querySelectorAll('#f-search,#f-status,#f-loc,#f-stn,#f-start,#f-end').forEach(e=>e.value='');renderReqs()">✖ Limpar</button>
+        </div>
+        <div class="tw"><table>
+          <thead><tr><th>ID</th><th>Motorista</th><th>Placa</th><th>Veículo</th><th>Combustível</th><th>Litros</th><th>Status</th><th>Data</th><th>Supervisor</th><th>Valor</th><th>Docs</th><th>Ações</th></tr></thead>
+          <tbody id="tb-reqs"></tbody>
+        </table></div>
+      </div>
+    </section>
+
+    <!-- BOMBONAS -->
+    <section class="screen" id="screen-bombonas">
+      <div class="ph"><h2>🛢️ Gestão de Bombonas</h2><p>Controle de reservatórios de combustível em campo</p></div>
+      <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap">
+        <button class="btn btn-accent hidden" id="btn-nb" onclick="openNovaBombona()">+ Nova Bombona</button>
+        <button class="btn btn-outline" onclick="loadAll()">🔄 Atualizar</button>
+      </div>
+      <!-- Painel de requisições pendentes de bombona — só gestor vê -->
+      <div class="card hidden" id="card-bombona-reqs" style="margin-bottom:22px;border:1px solid rgba(247,147,30,0.4)">
+        <div class="ch" style="background:rgba(247,147,30,0.08)">
+          <span class="ct">⏳ Requisições via Bombona — Aguardando Ação do Gestor</span>
+          <span id="bdg-bombona-reqs" style="background:var(--orange);color:#fff;font-size:.72rem;font-weight:700;padding:2px 8px;border-radius:99px;margin-left:8px"></span>
+        </div>
+        <div class="tw"><table>
+          <thead><tr><th>ID</th><th>Motorista/Operador</th><th>Bombona</th><th>Combustível</th><th>Litros Req.</th><th>Data</th><th>Status</th><th>Ações</th></tr></thead>
+          <tbody id="tb-bombona-reqs"></tbody>
+        </table></div>
+      </div>
+      <div class="bc-grid" id="bc-grid"></div>
+      <div class="card" style="margin-top:22px">
+        <div class="ch"><span class="ct">📋 Histórico de Transferências</span></div>
+        <div class="tw"><table>
+          <thead><tr><th>Data</th><th>Bombona</th><th>Responsável</th><th>Registrado Por</th><th>Destino</th><th>Litros</th><th>Notas</th><th>Fotos SharePoint</th></tr></thead>
+          <tbody id="tb-transfers"></tbody>
+        </table></div>
+      </div>
+    </section>
+
+    <!-- ABASTECIMENTOS -->
+    <section class="screen" id="screen-fuel-records">
+      <div class="ph"><h2>⛽ Registros de Abastecimento</h2></div>
+      <div class="card">
+        <div class="ch">
+          <span class="ct">⛽ Histórico</span>
+          <button class="btn btn-outline btn-sm" onclick="exportXLS('fuel')">⬇️ Excel</button>
+        </div>
+        <!-- Filtros -->
+        <div class="fb" style="margin-bottom:12px">
+          <select class="fi" id="ff-stn" onchange="renderFuelRecords()"><option value="">Todos os postos</option></select>
+          <select class="fi" id="ff-drv" onchange="renderFuelRecords()"><option value="">Todos motoristas</option></select>
+          <select class="fi" id="ff-fuel" onchange="renderFuelRecords()">
+            <option value="">Todos combustíveis</option>
+            <option>Diesel S10</option><option>Diesel Comum</option>
+            <option>Gasolina Comum</option><option>Gasolina Aditivada</option><option>Etanol</option>
+          </select>
+          <input type="date" class="fi" id="ff-start" onchange="renderFuelRecords()" placeholder="De">
+          <input type="date" class="fi" id="ff-end" onchange="renderFuelRecords()" placeholder="Até">
+          <button class="btn btn-outline btn-sm" onclick="document.querySelectorAll('#ff-stn,#ff-drv,#ff-fuel,#ff-start,#ff-end').forEach(e=>e.value='');renderFuelRecords()">✖ Limpar</button>
+        </div>
+        <!-- Totais do filtro -->
+        <div style="display:flex;gap:20px;padding:10px 0;margin-bottom:8px;border-bottom:1px solid var(--border)">
+          <span style="font-size:.82rem;color:var(--text3)">Concluídos: <b id="ff-total-count" style="color:var(--text)">—</b></span>
+          <span style="font-size:.82rem;color:var(--text3)">Total Litros: <b id="ff-total-litros" style="color:var(--orange)">—</b></span>
+          <span style="font-size:.82rem;color:var(--text3)">Custo Total: <b id="ff-total-custo" style="color:var(--green)">—</b></span>
+        </div>
+        <div class="tw"><table>
+          <thead><tr><th>Req.</th><th>Motorista</th><th>Veículo</th><th>Localidade</th><th>Posto</th><th>Combustível</th><th>Litros</th><th>Preço/L</th><th>Total</th><th>KM Rodado</th><th>Status</th><th>Data</th><th>Ações</th></tr></thead>
+          <tbody id="tb-fuels"></tbody>
+        </table></div>
+      </div>
+    </section>
+
+    <!-- FROTA -->
+    <section class="screen" id="screen-vehicles">
+      <div class="ph"><h2>🚗 Gestão da Frota</h2><p>52 veículos e equipamentos</p></div>
+      <div class="card">
+        <div class="ch">
+          <span class="ct">🚗 Frota Completa</span>
+          <div class="ca">
+            <select class="fi" id="fv-type" onchange="renderVehicles()">
+              <option value="">Todos os tipos</option>
+              <option>4X4</option><option>CAMINHÃO</option><option>PICK UP</option>
+              <option>EMBARCAÇÃO</option><option>RETROESCAVADEIRA</option><option>TRATOR</option>
+              <option>MOTO</option><option>VAN</option><option>LEVE</option><option>GERADOR</option>
+            </select>
+            <select class="fi" id="fv-loc" onchange="renderVehicles()"><option value="">Todas localidades</option></select>
+            <button class="btn btn-accent btn-sm" onclick="openNewVeh()">+ Adicionar</button>
+          </div>
+        </div>
+        <div class="tw"><table>
+          <thead><tr><th>ID</th><th>Placa/Cód.</th><th>Marca</th><th>Modelo</th><th>Tipo</th><th>Setor</th><th>Ano</th><th>Combustível</th><th>Tanque</th><th>Localidade</th><th>Propriedade</th><th>Status</th><th>KM/Hr</th><th>Ações</th></tr></thead>
+          <tbody id="tb-vehs"></tbody>
+        </table></div>
+      </div>
+    </section>
+
+    <!-- PREÇOS -->
+    <section class="screen" id="screen-fuel-prices">
+      <div class="ph"><h2>💰 Preços de Combustível</h2></div>
+      <div class="card">
+        <div class="ch"><span class="ct">💰 Tabela Atual</span><button class="btn btn-accent btn-sm" onclick="openPrices()">✏️ Atualizar Preços</button></div>
+        <div class="tw"><table>
+          <thead><tr><th>Combustível</th><th>Preço/Litro</th><th>Última Atualização</th><th>Ações</th></tr></thead>
+          <tbody id="tb-prices"></tbody>
+        </table></div>
+      </div>
+    </section>
+
+    <!-- CONSUMO -->
+    <section class="screen" id="screen-fuel-consumption">
+      <div class="ph"><h2>📈 Relatório de Consumo</h2><p>Análise detalhada por veículo, localidade e bombonas</p></div>
+
+      <!-- Filtros -->
+      <div class="card" style="margin-bottom:18px">
+        <div class="ch"><span class="ct">🔍 Filtros</span><button class="btn btn-outline btn-sm" onclick="loadConsumption()">🔄 Atualizar</button></div>
+        <div class="fb">
+          <select class="fi" id="cons-loc" onchange="filterConsumption()"><option value="">Todas localidades</option></select>
+          <select class="fi" id="cons-type" onchange="filterConsumption()">
+            <option value="">Todos tipos</option>
+            <option>4X4</option><option>CAMINHÃO</option><option>PICK UP</option>
+            <option>EMBARCAÇÃO</option><option>RETROESCAVADEIRA</option><option>TRATOR</option>
+            <option>MOTO</option><option>GERADOR</option>
+          </select>
+          <select class="fi" id="cons-perf" onchange="filterConsumption()">
+            <option value="">Todas performances</option>
+            <option value="ok">🟢 Excelente (≥8)</option>
+            <option value="med">🟡 Bom (6-8)</option>
+            <option value="bad">🔴 Atenção (&lt;6)</option>
+          </select>
+          <button class="btn btn-outline btn-sm" onclick="exportXLS('cons')">⬇️ Excel</button>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="sg" id="cons-stats"></div>
+
+      <!-- Gráficos de Consumo (frota) -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px" id="cons-charts">
+        <div class="card" style="margin:0">
+          <div class="ch"><span class="ct">⛽ Litros por Localidade</span></div>
+          <canvas id="chart-cons-loc" height="220"></canvas>
+        </div>
+        <div class="card" style="margin:0">
+          <div class="ch"><span class="ct">📊 Performance da Frota</span></div>
+          <canvas id="chart-cons-perf" height="220"></canvas>
+        </div>
+        <div class="card" style="margin:0">
+          <div class="ch"><span class="ct">🚗 Top Veículos (km/L)</span></div>
+          <canvas id="chart-cons-veh" height="220"></canvas>
+        </div>
+        <div class="card" style="margin:0">
+          <div class="ch"><span class="ct">👤 Top Motoristas (litros)</span></div>
+          <canvas id="chart-cons-drv" height="220"></canvas>
+        </div>
+      </div>
+
+      <!-- Abas -->
+      <div style="display:flex;gap:0;margin-bottom:-1px;position:relative;z-index:1">
+        <button class="cons-tab active" id="tab-veh"  onclick="switchConsTab('veh')">🚗 Por Veículo</button>
+        <button class="cons-tab"        id="tab-loc"  onclick="switchConsTab('loc')">📍 Por Localidade</button>
+        <button class="cons-tab"        id="tab-drv"  onclick="switchConsTab('drv')">👤 Por Motorista</button>
+        <button class="cons-tab"        id="tab-bomb" onclick="switchConsTab('bomb')">🛢️ Bombonas</button>
+      </div>
+
+      <!-- Aba Veículo -->
+      <div class="card" id="cons-panel-veh" style="border-radius:0 12px 12px 12px">
+        <div class="tw"><table>
+          <thead><tr>
+            <th>ID</th><th>Placa</th><th>Modelo</th><th>Tipo</th><th>Localidade</th>
+            <th>Motorista</th><th>Último Abast.</th><th>KM Atual</th>
+            <th>KM Acumulado</th><th>Litros</th>
+            <th title="Média ponderada real: KM total ÷ Litros total">Média km/L ⓘ</th>
+            <th>Performance</th><th>CPK R$/km</th><th>Custo Real</th>
+            <th title="Clique na linha para ver o histórico de cada abastecimento">Histórico</th>
+          </tr></thead>
+          <tbody id="tb-cons-veh"></tbody>
+        </table></div>
+      </div>
+
+      <!-- Aba Localidade -->
+      <div class="card hidden" id="cons-panel-loc" style="border-radius:0 12px 12px 12px">
+        <div class="tw"><table>
+          <thead><tr>
+            <th>Localidade</th><th>Veículos</th><th>Total KM</th><th>Total Litros</th>
+            <th>Média Geral (km/L)</th><th>🟢 Excelente</th><th>🟡 Bom</th><th>🔴 Atenção</th><th>Custo Estimado</th>
+          </tr></thead>
+          <tbody id="tb-cons-loc"></tbody>
+        </table></div>
+      </div>
+
+      <!-- Aba Motorista -->
+      <div class="card hidden" id="cons-panel-drv" style="border-radius:0 12px 12px 12px">
+        <div class="tw"><table>
+          <thead><tr>
+            <th>Motorista</th><th>Abastecimentos</th><th>Total Litros</th><th>Total KM</th>
+            <th>Média (km/L)</th><th>Veículos Usados</th><th>Performance</th>
+            <th>Custo Real</th><th>CPK R$/km</th>
+          </tr></thead>
+          <tbody id="tb-cons-drv"></tbody>
+        </table></div>
+      </div>
+
+      <!-- Aba Bombonas -->
+      <div class="card hidden" id="cons-panel-bomb" style="border-radius:0 12px 12px 12px">
+        <div class="ch" style="margin-bottom:16px">
+          <span class="ct">🛢️ Análise de Bombonas</span>
+          <button class="btn btn-outline btn-sm" onclick="exportXLS('bombonas')">⬇️ Excel</button>
+        </div>
+        <!-- Gráficos de Bombona -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:20px">
+          <div class="card" style="margin:0">
+            <div class="ch"><span class="ct">🛢️ Top Bombonas — Total Transferido</span></div>
+            <canvas id="chart-bomb-total" height="240"></canvas>
+          </div>
+          <div class="card" style="margin:0">
+            <div class="ch"><span class="ct">📊 N° de Transferências por Bombona</span></div>
+            <canvas id="chart-bomb-count" height="240"></canvas>
+          </div>
+          <div class="card" style="margin:0">
+            <div class="ch"><span class="ct">⚖️ Saldo Atual vs Capacidade (L)</span></div>
+            <canvas id="chart-bomb-saldo" height="240"></canvas>
+          </div>
+          <div class="card" style="margin:0">
+            <div class="ch"><span class="ct">📅 Consumo por Período (30d vs 7d)</span></div>
+            <canvas id="chart-bomb-period" height="240"></canvas>
+          </div>
+        </div>
+        <!-- Tabela Bombonas -->
+        <div class="tw"><table>
+          <thead><tr>
+            <th>Bombona</th><th>Combustível</th><th>Localidade</th><th>Responsável</th>
+            <th>Status</th><th>Saldo Atual</th>
+            <th>Total Transferido</th><th>Últimos 30d</th><th>Últimos 7d</th>
+            <th>N° Transf.</th><th>Última Transf.</th>
+          </tr></thead>
+          <tbody id="tb-cons-bomb"></tbody>
+        </table></div>
+      </div>
+    </section>
+
+    <!-- RELATÓRIOS -->
+    <section class="screen" id="screen-reports">
+      <div class="ph"><h2>📊 Relatórios</h2></div>
+      <div class="card">
+        <div class="ch"><span class="ct">🔍 Filtros</span></div>
+        <div class="fr" style="gap:14px;margin-bottom:16px">
+          <div class="fg"><label>Data Inicial</label><input type="date" id="rp-s"></div>
+          <div class="fg"><label>Data Final</label><input type="date" id="rp-e"></div>
+          <div class="fg"><label>Motorista</label><select id="rp-drv"><option value="">Todos</option></select></div>
+          <div class="fg"><label>Status</label>
+            <select id="rp-st">
+              <option value="">Todos</option><option value="pending">Pendente</option>
+              <option value="signed">Aprovado</option><option value="completed">Concluído</option>
+              <option value="rejected">Rejeitado</option>
+            </select>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-accent" onclick="genReport()">Gerar Relatório</button>
+          <button class="btn btn-outline" onclick="exportXLS('rep')">⬇️ Excel</button>
+        </div>
+      </div>
+      <div class="sg hidden" id="rp-stats">
+        <div class="sc total"><span class="sn" id="rp-total">0</span><span class="sl">Total</span></div>
+        <div class="sc signed"><span class="sn" id="rp-aprov">0</span><span class="sl">Aprovadas</span></div>
+        <div class="sc completed"><span class="sn" id="rp-comp">0</span><span class="sl">Concluídas</span></div>
+        <div class="sc rejected"><span class="sn" id="rp-rej">0</span><span class="sl">Rejeitadas</span></div>
+      </div>
+
+      <!-- Gráficos do relatório -->
+      <div class="hidden" id="rp-charts">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px">
+          <div class="card" style="margin:0">
+            <div class="ch"><span class="ct">📅 Requisições por Dia</span></div>
+            <canvas id="chart-rp-timeline" height="200"></canvas>
+          </div>
+          <div class="card" style="margin:0">
+            <div class="ch"><span class="ct">📊 Status</span></div>
+            <canvas id="chart-rp-status" height="200"></canvas>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px">
+          <div class="card" style="margin:0">
+            <div class="ch"><span class="ct">👤 Top Motoristas (litros)</span></div>
+            <canvas id="chart-rp-drivers" height="220"></canvas>
+          </div>
+          <div class="card" style="margin:0">
+            <div class="ch"><span class="ct">⛽ Por Combustível</span></div>
+            <canvas id="chart-rp-fuel" height="220"></canvas>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px">
+          <div class="card" style="margin:0">
+            <div class="ch"><span class="ct">📍 Por Cidade</span></div>
+            <canvas id="chart-rp-city" height="200"></canvas>
+          </div>
+          <div class="card" style="margin:0">
+            <div class="ch"><span class="ct">💰 Custo por Semana</span></div>
+            <canvas id="chart-rp-cost" height="200"></canvas>
+          </div>
+        </div>
+      </div>
+      <div class="card hidden" id="rp-tbl">
+        <div class="tw"><table>
+          <thead><tr><th>ID</th><th>Motorista</th><th>Veículo</th><th>Cidade</th><th>Combustível</th><th>Status</th><th>Data</th><th>Valor</th></tr></thead>
+          <tbody id="tb-rp"></tbody>
+        </table></div>
+      </div>
+    </section>
+
+    <!-- POSTOS -->
+    <section class="screen" id="screen-stations">
+      <div class="ph"><h2>⛽ Gestão de Postos</h2><p>Adicione, edite ou desative postos vinculados às cidades</p></div>
+      <div class="card">
+        <div class="ch">
+          <span class="ct">⛽ Postos Cadastrados</span>
+          <div class="ca">
+            <select class="fi" id="st-filter-city" onchange="renderStations()"><option value="">Todas as cidades</option></select>
+            <select class="fi" id="st-filter-active" onchange="renderStations()">
+              <option value="">Todos</option>
+              <option value="true">Ativos</option>
+              <option value="false">Inativos</option>
+            </select>
+            <button class="btn btn-accent btn-sm" onclick="openNewStation()">+ Novo Posto</button>
+          </div>
+        </div>
+        <div class="tw"><table>
+          <thead><tr><th>Nome do Posto</th><th>Cidade</th><th>Status</th><th>Ações</th></tr></thead>
+          <tbody id="tb-stations"></tbody>
+        </table></div>
+      </div>
+    </section>
+
+    <!-- OPERADORES DE BOMBONA -->
+    <section class="screen" id="screen-operators">
+      <div class="ph"><h2>🛢️ Operadores de Bombona</h2><p>Gerencie os acessos dos operadores que solicitam abastecimento via bombona</p></div>
+      <div class="card">
+        <div class="ch">
+          <span class="ct">🛢️ Operadores Cadastrados</span>
+          <button class="btn btn-accent btn-sm" onclick="openNewOperator()">+ Novo Operador</button>
+        </div>
+        <div class="tw"><table>
+          <thead><tr><th>Matrícula</th><th>Nome</th><th>Bombona Vinculada</th><th>Senha Padrão</th><th>Status</th><th>Ações</th></tr></thead>
+          <tbody id="tb-operators"></tbody>
+        </table></div>
+      </div>
+    </section>
+
+    <!-- TRANSFERÊNCIAS DE BOMBONAS -->
+    <section class="screen" id="screen-transfer-records">
+      <div class="ph"><h2>🛢️ Relatório de Transferências de Bombonas</h2><p>Histórico de combustível transferido das bombonas para veículos e campo</p></div>
+      <div class="card">
+        <div class="ch">
+          <span class="ct">🛢️ Transferências Registradas</span>
+          <div class="ca">
+            <input class="fi" type="date" id="tr-start" onchange="renderTransferRecords()">
+            <input class="fi" type="date" id="tr-end" onchange="renderTransferRecords()">
+            <button class="btn btn-outline btn-sm" onclick="exportXLS('transfers')">⬇️ Excel</button>
+          </div>
+        </div>
+        <div class="tw"><table>
+          <thead><tr><th>Data</th><th>Responsável</th><th>Bombona</th><th>Combustível</th><th>Litros</th><th>Veículo</th><th>Placa</th><th>Localidade</th><th>Fotos</th></tr></thead>
+          <tbody id="tb-transfer-records"></tbody>
+        </table></div>
+      </div>
+    </section>
+
+    <!-- AUDITORIA -->
+    <section class="screen" id="screen-audit">
+      <div class="ph"><h2>🔍 Auditoria do Sistema</h2><p>Registro de todas as ações dos gestores — aprovações, anulações, exclusões e edições</p></div>
+      <div class="card">
+        <div class="ch">
+          <span class="ct">🔍 Log de Ações</span>
+          <div class="ca">
+            <input class="fi" placeholder="Filtrar por gestor..." id="aud-actor" oninput="renderAudit()">
+            <select class="fi" id="aud-action" onchange="renderAudit()">
+              <option value="">Todas as ações</option>
+              <option value="APROVAÇÃO">✅ Aprovações</option>
+              <option value="REJEIÇÃO">❌ Rejeições</option>
+              <option value="CONCLUSÃO">✔️ Conclusões</option>
+              <option value="ANULAÇÃO">🚫 Anulações</option>
+              <option value="EXCLUSÃO">🗑️ Exclusões</option>
+              <option value="ATUALIZAÇÃO">📝 Atualizações</option>
+              <option value="EDIÇÃO">✏️ Edições</option>
+            </select>
+            <button class="btn btn-outline btn-sm" onclick="loadAudit()">🔄 Atualizar</button>
+          </div>
+        </div>
+        <div class="tw"><table>
+          <thead><tr><th>Data/Hora</th><th>Ação</th><th>Gestor</th><th>Requisição</th><th>Detalhes</th></tr></thead>
+          <tbody id="tb-audit"></tbody>
+        </table></div>
+      </div>
+    </section>
+
+    <!-- RELATÓRIO MENSAL -->
+    <section class="screen" id="screen-relatorio-mensal">
+      <div class="ph"><h2>📅 Relatório Mensal Consolidado</h2><p>Fechamento completo com CPK, custo por localidade, veículo e motorista</p></div>
+
+      <!-- Seletor de mês -->
+      <div class="card" style="margin-bottom:18px">
+        <div class="ch"><span class="ct">🔍 Período</span></div>
+        <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap">
+          <div class="fg">
+            <label>Mês</label>
+            <select class="fi" id="rm-mes">
+              <option value="1">Janeiro</option><option value="2">Fevereiro</option>
+              <option value="3">Março</option><option value="4">Abril</option>
+              <option value="5">Maio</option><option value="6">Junho</option>
+              <option value="7">Julho</option><option value="8">Agosto</option>
+              <option value="9">Setembro</option><option value="10">Outubro</option>
+              <option value="11">Novembro</option><option value="12">Dezembro</option>
+            </select>
+          </div>
+          <div class="fg">
+            <label>Ano</label>
+            <select class="fi" id="rm-ano">
+              <option value="2024">2024</option><option value="2025">2025</option>
+              <option value="2026" selected>2026</option><option value="2027">2027</option>
+            </select>
+          </div>
+          <button class="btn btn-accent" onclick="gerarRelatorioMensal()">📊 Gerar Relatório</button>
+          <button class="btn btn-outline" onclick="exportRelatorioMensal()">⬇️ Excel Completo</button>
+        </div>
+      </div>
+
+      <div class="hidden" id="rm-results">
+        <h3 id="rm-titulo" style="margin-bottom:16px;color:var(--orange)"></h3>
+
+        <!-- Cards de totais -->
+        <div class="sg" id="rm-cards" style="margin-bottom:18px"></div>
+
+        <!-- Gráficos -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px">
+          <div class="card" style="margin:0">
+            <div class="ch"><span class="ct">📍 Custo por Localidade</span></div>
+            <canvas id="chart-rm-loc" height="240"></canvas>
+          </div>
+          <div class="card" style="margin:0">
+            <div class="ch"><span class="ct">⛽ Litros por Combustível</span></div>
+            <canvas id="chart-rm-fuel" height="240"></canvas>
+          </div>
+        </div>
+
+        <!-- Por Localidade -->
+        <div class="card" style="margin-bottom:18px">
+          <div class="ch"><span class="ct">📍 Por Localidade</span></div>
+          <div class="tw"><table>
+            <thead><tr><th>Localidade</th><th>Abastecimentos</th><th>Litros</th><th>Custo Total</th><th>% do Total</th></tr></thead>
+            <tbody id="rm-tb-loc"></tbody>
+          </table></div>
+        </div>
+
+        <!-- Por Combustível -->
+        <div class="card" style="margin-bottom:18px">
+          <div class="ch"><span class="ct">⛽ Por Combustível</span></div>
+          <div class="tw"><table>
+            <thead><tr><th>Combustível</th><th>Abastecimentos</th><th>Litros</th><th>Preço Médio</th><th>Custo Total</th></tr></thead>
+            <tbody id="rm-tb-fuel"></tbody>
+          </table></div>
+        </div>
+
+        <!-- Por Veículo com CPK -->
+        <div class="card" style="margin-bottom:18px">
+          <div class="ch">
+            <span class="ct">🚗 Por Veículo — CPK (Custo por KM)</span>
+            <span style="font-size:.75rem;color:var(--text3)">🟢 &lt;R$0.50/km · 🟡 R$0.50–1.00 · 🔴 &gt;R$1.00</span>
+          </div>
+          <div class="tw"><table>
+            <thead><tr><th>Placa</th><th>Veículo</th><th>Abast.</th><th>Litros</th><th>KM Rodados</th><th>Média km/L</th><th>CPK R$/km</th><th>Custo Total</th></tr></thead>
+            <tbody id="rm-tb-veh"></tbody>
+          </table></div>
+        </div>
+
+        <!-- Por Motorista -->
+        <div class="card">
+          <div class="ch"><span class="ct">👤 Por Motorista</span></div>
+          <div class="tw"><table>
+            <thead><tr><th>Motorista</th><th>Abastecimentos</th><th>Litros</th><th>Custo Total</th></tr></thead>
+            <tbody id="rm-tb-drv"></tbody>
+          </table></div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- RELATÓRIO POR VEÍCULO -->
+    <section class="screen" id="screen-relatorio-veiculo">
+      <div class="ph"><h2>🚗 Relatório por Veículo</h2><p>Quanto cada veículo consumiu — posto + bombona — por semana e no total</p></div>
+
+      <div class="card" style="margin-bottom:18px">
+        <div class="ch"><span class="ct">🔍 Filtros</span></div>
+        <div class="fb" style="flex-wrap:wrap;gap:10px">
+          <div class="fg" style="min-width:120px"><label>De</label><input type="date" id="rv-inicio"></div>
+          <div class="fg" style="min-width:120px"><label>Até</label><input type="date" id="rv-fim"></div>
+          <div class="fg" style="min-width:200px"><label>Veículo / Placa</label><select id="rv-plate"><option value="">Todos os veículos</option></select></div>
+          <div class="fg" style="min-width:160px"><label>Combustível</label>
+            <select id="rv-fuel">
+              <option value="">Todos</option><option>Diesel S10</option><option>Diesel Comum</option>
+              <option>Gasolina Comum</option><option>Gasolina Aditivada</option><option>Etanol</option>
+            </select>
+          </div>
+          <div style="display:flex;align-items:flex-end;gap:8px">
+            <button class="btn btn-accent" onclick="gerarRelatorioVeiculo()">📊 Gerar</button>
+            <button class="btn btn-outline" onclick="exportRelVeiculo()">⬇️ Excel</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="hidden" id="rv-results">
+        <!-- Totais -->
+        <div style="display:flex;gap:20px;flex-wrap:wrap;padding:12px 0 16px;border-bottom:1px solid var(--border);font-size:.85rem;color:var(--text3)" id="rv-totais"></div>
+
+        <!-- Gráficos -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:18px 0">
+          <div class="card" style="margin:0"><div class="ch"><span class="ct">💰 Top 10 — Custo por Veículo</span></div><canvas id="chart-rv-custo" height="240"></canvas></div>
+          <div class="card" style="margin:0"><div class="ch"><span class="ct">⛽ Litros — Posto vs Bombona</span></div><canvas id="chart-rv-litros" height="240"></canvas></div>
+          <div class="card" style="margin:0"><div class="ch"><span class="ct">📅 Consumo Semanal (Litros)</span></div><canvas id="chart-rv-semanal" height="240"></canvas></div>
+          <div class="card" style="margin:0"><div class="ch"><span class="ct">🏎️ Média km/L por Veículo</span></div><canvas id="chart-rv-media" height="240"></canvas></div>
+        </div>
+
+        <!-- Tabela resumo -->
+        <div class="card" style="margin-bottom:18px">
+          <div class="ch"><span class="ct">🚗 Resumo por Veículo</span><span style="font-size:.75rem;color:var(--text3)">🟣 = litros de bombona</span></div>
+          <div class="tw"><table>
+            <thead><tr><th>Placa</th><th>Modelo</th><th>Tipo</th><th>Local</th><th>Abast.</th><th>Méd. L/Abast.</th><th>Méd. R$/Abast.</th><th>Preço Médio</th><th>Litros Posto</th><th style="color:#A78BFA">🟣 Litros Bomb.</th><th>Total Litros</th><th>KM Rodados</th><th>Média km/L</th><th>CPK R$/km</th><th>Custo Total</th></tr></thead>
+            <tbody id="tb-rv-veiculo"></tbody>
+          </table></div>
+        </div>
+
+        <!-- Semanal detalhado (aparece quando filtra por placa) -->
+        <div class="card" style="margin-bottom:18px">
+          <div class="ch">
+            <span class="ct">📅 Consumo Semanal Detalhado</span>
+            <button class="btn btn-outline btn-sm" onclick="renderRelVeiculoSemanal()">🔄 Atualizar</button>
+          </div>
+          <div class="tw"><table>
+            <thead><tr><th>Semana</th><th>Abast.</th><th>Litros Posto</th><th style="color:#A78BFA">Litros Bomb.</th><th>Total Litros</th><th>Custo</th></tr></thead>
+            <tbody id="tb-rv-semanal"></tbody>
+          </table></div>
+        </div>
+
+        <!-- Histórico detalhado (só com placa selecionada) -->
+        <div class="card">
+          <div class="ch"><span class="ct">📋 Histórico Completo de Abastecimentos</span></div>
+          <div class="tw"><table>
+            <thead><tr><th>Data</th><th>Tipo</th><th>Motorista</th><th>Posto/Bombona</th><th>Cidade</th><th>Combustível</th><th>Litros</th><th>Preço/L</th><th>Valor</th><th>KM (odômetro)</th><th>KM Rodado</th></tr></thead>
+            <tbody id="tb-rv-historico"></tbody>
+          </table></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RELATÓRIO POR POSTO -->
+    <section class="screen" id="screen-relatorio-posto">
+      <div class="ph"><h2>⛽ Relatório por Posto</h2><p>Quanto foi abastecido em cada posto — litros, custo e frequência</p></div>
+
+      <div class="card" style="margin-bottom:18px">
+        <div class="ch"><span class="ct">🔍 Filtros</span></div>
+        <div class="fb" style="flex-wrap:wrap;gap:10px">
+          <div class="fg" style="min-width:120px"><label>De</label><input type="date" id="rp2-inicio"></div>
+          <div class="fg" style="min-width:120px"><label>Até</label><input type="date" id="rp2-fim"></div>
+          <div class="fg" style="min-width:220px"><label>Posto</label><select id="rp2-posto"><option value="">Todos os postos</option></select></div>
+          <div class="fg" style="min-width:160px"><label>Combustível</label>
+            <select id="rp2-fuel">
+              <option value="">Todos</option><option>Diesel S10</option><option>Diesel Comum</option>
+              <option>Gasolina Comum</option><option>Gasolina Aditivada</option><option>Etanol</option>
+            </select>
+          </div>
+          <div style="display:flex;align-items:flex-end;gap:8px">
+            <button class="btn btn-accent" onclick="gerarRelatorioPosto()">📊 Gerar</button>
+            <button class="btn btn-outline" onclick="exportRelatorioPosto()">⬇️ Excel</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="hidden" id="rp2-results">
+        <!-- Gráficos -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px">
+          <div class="card" style="margin:0"><div class="ch"><span class="ct">💰 Top 8 Postos — Custo</span></div><canvas id="chart-rp2-custo" height="240"></canvas></div>
+          <div class="card" style="margin:0"><div class="ch"><span class="ct">⛽ Litros por Posto</span></div><canvas id="chart-rp2-litros" height="240"></canvas></div>
+        </div>
+        <div class="card" style="margin-bottom:18px"><div class="ch"><span class="ct">📅 Custo Semanal (todos os postos)</span></div><canvas id="chart-rp2-semanal" height="180"></canvas></div>
+
+        <!-- Tabela por posto -->
+        <div class="card" style="margin-bottom:18px">
+          <div class="ch"><span class="ct">⛽ Resumo por Posto</span></div>
+          <div class="tw"><table>
+            <thead><tr><th>Posto</th><th>Cidade</th><th>Abastecimentos</th><th>Total Litros</th><th>Combustíveis</th><th>Preço Médio/L</th><th>Veículos</th><th>Motoristas</th><th>Custo Total</th></tr></thead>
+            <tbody id="tb-rp2-posto"></tbody>
+          </table></div>
+        </div>
+
+        <!-- Por combustível detalhado -->
+        <div class="card">
+          <div class="ch"><span class="ct">⛽ Detalhe por Posto × Combustível</span></div>
+          <div class="tw"><table>
+            <thead><tr><th>Posto</th><th>Cidade</th><th>Combustível</th><th>Abastecimentos</th><th>Litros</th><th>Preço Médio</th><th>Custo Total</th></tr></thead>
+            <tbody id="tb-rp2-fuel"></tbody>
+          </table></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RELATÓRIO BOMBONAS (entrada + saída unificado) -->
+    <section class="screen" id="screen-relatorio-bombona">
+      <div class="ph"><h2>🛢️ Relatório de Bombonas</h2><p>Entradas, saídas e saldo — tudo numa visão só. Rastreie o combustível da bombona até o veículo.</p></div>
+
+      <div class="card" style="margin-bottom:18px">
+        <div class="ch"><span class="ct">🔍 Filtros</span></div>
+        <div class="fb" style="flex-wrap:wrap;gap:10px">
+          <div class="fg" style="min-width:120px"><label>De</label><input type="date" id="rb-inicio"></div>
+          <div class="fg" style="min-width:120px"><label>Até</label><input type="date" id="rb-fim"></div>
+          <div class="fg" style="min-width:200px"><label>Operador</label><select id="rb-operador"><option value="">Todos os operadores</option></select></div>
+          <div class="fg" style="min-width:200px"><label>Bombona</label><select id="rb-bombona"><option value="">Todas as bombonas</option></select></div>
+          <div style="display:flex;align-items:flex-end;gap:8px">
+            <button class="btn btn-accent" onclick="gerarRelatorioBombona()">📊 Gerar</button>
+            <button class="btn btn-outline" onclick="exportRelatorioBombona()">⬇️ Excel</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="hidden" id="rb-results">
+        <!-- Totais -->
+        <div style="display:flex;gap:20px;flex-wrap:wrap;padding:12px 0 16px;border-bottom:1px solid var(--border);font-size:.85rem;color:var(--text3);margin-bottom:18px" id="rb-totais"></div>
+
+        <!-- Gráficos -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px">
+          <div class="card" style="margin:0"><div class="ch"><span class="ct">📅 Entradas vs Saídas por Semana</span></div><canvas id="chart-rb-semanal" height="220"></canvas></div>
+          <div class="card" style="margin:0"><div class="ch"><span class="ct">🥧 Distribuição — Saído vs Saldo</span></div><canvas id="chart-rb-pizza" height="220"></canvas></div>
+        </div>
+
+        <!-- Resumo por bombona -->
+        <div class="card" style="margin-bottom:18px">
+          <div class="ch"><span class="ct">🛢️ Saldo e Balanço por Bombona</span></div>
+          <div class="tw"><table>
+            <thead><tr><th>Bombona</th><th>Combustível</th><th>Local</th><th>Responsável / Operador</th><th>Saldo Atual</th><th style="color:var(--green)">Total Entradas</th><th style="color:var(--red)">Total Saídas</th><th style="color:var(--orange)">Balanço</th><th>Qtd Entradas</th><th>Qtd Saídas</th></tr></thead>
+            <tbody id="tb-rb-resumo"></tbody>
+          </table></div>
+        </div>
+
+        <!-- Movimentações detalhadas -->
+        <div class="card">
+          <div class="ch"><span class="ct">📋 Movimentações Detalhadas — Entradas e Saídas</span>
+            <span style="font-size:.75rem;color:var(--text3)">⬆ verde = entrada de combustível · ⬇ vermelho = saída para veículo</span>
+          </div>
+          <div class="tw"><table>
+            <thead><tr><th>Data</th><th>Bombona</th><th>Combustível</th><th>Local</th><th>Tipo</th><th>Litros</th><th>Responsável</th><th>Placa Destino</th><th>Notas</th><th>Registrado Por</th></tr></thead>
+            <tbody id="tb-rb-movimentos"></tbody>
+          </table></div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- RELATÓRIO POR LOCALIDADE -->
+    <section class="screen" id="screen-relatorio-localidade">
+      <div class="ph"><h2>📍 Relatório por Localidade</h2><p>Tudo que entrou e saiu em cada cidade — posto, bombona, veículos, motoristas e preços</p></div>
+
+      <!-- Filtros -->
+      <div class="card" style="margin-bottom:18px">
+        <div class="ch"><span class="ct">🔍 Filtros</span></div>
+        <div class="fb" style="flex-wrap:wrap;gap:10px">
+          <div class="fg" style="min-width:120px"><label>De</label><input type="date" id="rl-inicio"></div>
+          <div class="fg" style="min-width:120px"><label>Até</label><input type="date" id="rl-fim"></div>
+          <div class="fg" style="min-width:200px"><label>Cidade</label>
+            <select id="rl-cidade"><option value="">Todas as cidades</option></select>
+          </div>
+          <div class="fg" style="min-width:160px"><label>Combustível</label>
+            <select id="rl-fuel">
+              <option value="">Todos</option>
+              <option>Diesel S10</option><option>Diesel Comum</option>
+              <option>Gasolina Comum</option><option>Gasolina Aditivada</option><option>Etanol</option>
+            </select>
+          </div>
+          <div style="display:flex;align-items:flex-end;gap:8px">
+            <button class="btn btn-accent" onclick="gerarRelatorioLocalidade()">📊 Gerar</button>
+            <button class="btn btn-outline" onclick="exportRelLocalidade()">⬇️ Excel</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="hidden" id="rl-results">
+
+        <!-- Totais -->
+        <div style="display:flex;gap:20px;flex-wrap:wrap;padding:12px 0 16px;border-bottom:1px solid var(--border);font-size:.85rem;color:var(--text3);margin-bottom:18px" id="rl-totais"></div>
+
+        <!-- Gráficos -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px">
+          <div class="card" style="margin:0"><div class="ch"><span class="ct">⛽ Litros por Cidade — Posto vs Bombona</span></div><canvas id="chart-rl-litros" height="240"></canvas></div>
+          <div class="card" style="margin:0"><div class="ch"><span class="ct">💰 Distribuição de Custo</span></div><canvas id="chart-rl-custo" height="240"></canvas></div>
+          <div class="card" style="margin:0"><div class="ch"><span class="ct">📅 Consumo Semanal (litros)</span></div><canvas id="chart-rl-semanal" height="200"></canvas></div>
+          <div class="card" style="margin:0"><div class="ch"><span class="ct">🏷️ Preço Médio R$/L por Cidade</span></div><canvas id="chart-rl-preco" height="200"></canvas></div>
+        </div>
+
+        <!-- Tabela resumo por cidade -->
+        <div class="card" style="margin-bottom:18px">
+          <div class="ch">
+            <span class="ct">📍 Resumo por Cidade</span>
+            <span style="font-size:.75rem;color:var(--text3)">Clique numa linha para ver os detalhes da cidade</span>
+          </div>
+          <div class="tw"><table>
+            <thead><tr>
+              <th>Cidade</th><th>Abastec.</th><th>Veículos</th><th>Motoristas</th>
+              <th>Litros Posto</th><th style="color:#A78BFA">Litros Bombona</th>
+              <th style="color:var(--orange)">Total Litros</th>
+              <th>Preço Médio</th><th>Custo (posto)</th><th></th>
+            </tr></thead>
+            <tbody id="tb-rl-resumo"></tbody>
+          </table></div>
+        </div>
+
+        <!-- Veículos por cidade -->
+        <div class="card" style="margin-bottom:18px">
+          <div class="ch"><span class="ct">🚗 Veículos por Cidade</span></div>
+          <div class="tw"><table>
+            <thead><tr><th>Cidade</th><th>Placa</th><th>Veículo</th><th>Abastec.</th><th>Litros</th><th>KM Rodados</th><th>Média km/L</th><th>Custo</th></tr></thead>
+            <tbody id="tb-rl-veiculos"></tbody>
+          </table></div>
+        </div>
+
+        <!-- Postos por cidade -->
+        <div class="card" style="margin-bottom:18px">
+          <div class="ch"><span class="ct">⛽ Postos Utilizados por Cidade</span></div>
+          <div class="tw"><table>
+            <thead><tr><th>Cidade</th><th>Posto</th><th>Abastecimentos</th><th>Litros</th><th>Preço Médio</th><th>Custo</th></tr></thead>
+            <tbody id="tb-rl-postos"></tbody>
+          </table></div>
+        </div>
+
+        <!-- Por combustível -->
+        <div class="card" style="margin-bottom:18px">
+          <div class="ch"><span class="ct">🔥 Por Tipo de Combustível e Cidade</span></div>
+          <div class="tw"><table>
+            <thead><tr><th>Cidade</th><th>Combustível</th><th>Abastecimentos</th><th>Litros</th><th>Preço Médio</th><th>Custo</th></tr></thead>
+            <tbody id="tb-rl-comb"></tbody>
+          </table></div>
+        </div>
+
+        <!-- Consumo semanal da cidade selecionada -->
+        <div class="card hidden" id="rl-semanal-section" style="margin-bottom:18px">
+          <div class="ch"><span class="ct" id="rl-semanal-title">📅 Consumo Semanal da Cidade</span></div>
+          <div class="tw"><table>
+            <thead><tr><th>Semana</th><th>Abastecimentos</th><th>Litros</th><th>Custo</th></tr></thead>
+            <tbody id="tb-rl-semanal"></tbody>
+          </table></div>
+        </div>
+
+        <!-- Histórico detalhado -->
+        <div class="card">
+          <div class="ch"><span class="ct">📋 Histórico de Abastecimentos</span>
+            <span style="font-size:.75rem;color:var(--text3)">Selecione uma cidade para ver o histórico completo</span>
+          </div>
+          <div class="tw"><table>
+            <thead><tr><th>Data</th><th>Placa</th><th>Veículo</th><th>Motorista</th><th>Posto</th><th>Combustível</th><th>Litros</th><th>Preço/L</th><th>Valor</th><th>KM</th></tr></thead>
+            <tbody id="tb-rl-historico"></tbody>
+          </table></div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- AUDITORIA DE LITROS -->
+    <section class="screen" id="screen-auditoria-litros">
+      <div class="ph"><h2>🚨 Auditoria de Litros</h2><p>Todo abastecimento, um por um — litros, km rodado e o que fugiu do padrão daquele carro</p></div>
+
+      <div class="card" style="margin-bottom:18px">
+        <div class="ch"><span class="ct">🔍 Filtros</span></div>
+        <div class="fb" style="flex-wrap:wrap;gap:10px">
+          <div class="fg" style="min-width:120px"><label>De</label><input type="date" id="al-inicio"></div>
+          <div class="fg" style="min-width:120px"><label>Até</label><input type="date" id="al-fim"></div>
+          <div class="fg" style="min-width:200px"><label>Veículo / Placa</label><select id="al-plate"><option value="">Todos os veículos</option></select></div>
+          <div class="fg" style="min-width:180px"><label>Mostrar</label>
+            <select id="al-filtro" onchange="if(AL_DATA) renderAuditoriaLitros(AL_DATA)">
+              <option value="">Todos os abastecimentos</option>
+              <option value="alertas">Só com alerta</option>
+            </select>
+          </div>
+          <div style="display:flex;align-items:flex-end;gap:8px">
+            <button class="btn btn-accent" onclick="gerarAuditoriaLitros()">📊 Gerar</button>
+            <button class="btn btn-outline" onclick="exportAuditoriaLitros()">⬇️ Excel</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="hidden" id="al-results">
+        <div style="display:flex;gap:20px;flex-wrap:wrap;padding:12px 0 16px;border-bottom:1px solid var(--border);font-size:.85rem;color:var(--text3)" id="al-totais"></div>
+
+        <!-- Ranking de veículos com mais alertas -->
+        <div class="card" style="margin:18px 0">
+          <div class="ch"><span class="ct">🏆 Veículos com mais alertas</span></div>
+          <div class="tw"><table>
+            <thead><tr><th>Placa</th><th>Veículo</th><th>Local</th><th>Abast.</th><th>Litros</th><th style="color:#A78BFA">🟣 Bombona</th><th>Custo</th><th>Alertas</th></tr></thead>
+            <tbody id="tb-al-ranking"></tbody>
+          </table></div>
+        </div>
+
+        <!-- Tabela completa, abastecimento por abastecimento -->
+        <div class="card">
+          <div class="ch"><span class="ct">📋 Todos os abastecimentos</span><span style="font-size:.75rem;color:var(--text3)">ordenado: alertas primeiro, depois mais recente</span></div>
+          <div class="tw"><table>
+            <thead><tr><th>Data</th><th>Placa</th><th>Tipo</th><th>Veículo</th><th>Motorista</th><th>Posto/Bombona</th><th>Litros (evento)</th><th>Litros no Intervalo</th><th>Preço/L</th><th>Custo</th><th>KM Rodado</th><th>Consumo</th><th>Méd. do carro</th><th>Alertas</th></tr></thead>
+            <tbody id="tb-al-abast"></tbody>
+          </table></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- KM RODADO POR VEÍCULO -->
+    <section class="screen" id="screen-km-rodado">
+      <div class="ph"><h2>🛣️ KM Rodado</h2><p>Cada evento (posto ou bombona) com o km rodado desde o checkpoint anterior — filtre por veículo, motorista ou posto</p></div>
+
+      <div class="card" style="margin-bottom:18px">
+        <div class="ch"><span class="ct">🔍 Filtros</span></div>
+        <div class="fb" style="flex-wrap:wrap;gap:10px">
+          <div class="fg" style="min-width:120px"><label>De</label><input type="date" id="kr-inicio"></div>
+          <div class="fg" style="min-width:120px"><label>Até</label><input type="date" id="kr-fim"></div>
+          <div class="fg" style="min-width:200px"><label>Veículo / Placa</label><select id="kr-plate"><option value="">Todos os veículos</option></select></div>
+          <div class="fg" style="min-width:180px"><label>Motorista</label><select id="kr-driver"><option value="">Todos os motoristas</option></select></div>
+          <div class="fg" style="min-width:200px"><label>Posto / Bombona</label><select id="kr-station"><option value="">Todos</option></select></div>
+          <div style="display:flex;align-items:flex-end;gap:8px">
+            <button class="btn btn-accent" onclick="gerarKmRodado()">📊 Gerar</button>
+            <button class="btn btn-outline" onclick="exportKmRodado()">⬇️ Excel</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="hidden" id="kr-results">
+        <div style="display:flex;gap:20px;flex-wrap:wrap;padding:12px 0 16px;border-bottom:1px solid var(--border);font-size:.85rem;color:var(--text3)" id="kr-totais"></div>
+
+        <!-- Resumo por veículo -->
+        <div class="card" style="margin:18px 0">
+          <div class="ch"><span class="ct">🚗 KM Rodado por Veículo</span><span style="font-size:.75rem;color:var(--text3)">soma dentro do filtro aplicado</span></div>
+          <div class="tw"><table>
+            <thead><tr><th>Placa</th><th>Veículo</th><th>Local</th><th>Eventos</th><th>KM Menor</th><th>KM Maior</th><th>KM Rodado (soma)</th></tr></thead>
+            <tbody id="tb-kr-veiculo"></tbody>
+          </table></div>
+        </div>
+
+        <!-- Todos os eventos -->
+        <div class="card">
+          <div class="ch"><span class="ct">📋 Todos os eventos</span><span style="font-size:.75rem;color:var(--text3)">mais recente primeiro</span></div>
+          <div class="tw"><table>
+            <thead><tr><th>Data</th><th>Placa</th><th>Veículo</th><th>Tipo</th><th>Motorista</th><th>Posto/Bombona</th><th>KM Odômetro</th><th>KM Rodado</th></tr></thead>
+            <tbody id="tb-kr-eventos"></tbody>
+          </table></div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- Modal: Novo Operador de Bombona -->
+<div class="overlay" id="m-operator">
+  <div class="modal">
+    <div class="mh"><span class="mt">🛢️ Novo Operador de Bombona</span><button class="mc" onclick="closeOverlay('m-operator')">✕</button></div>
+    <div class="mb">
+      <div class="form-grid">
+        <div class="fg">
+          <label>Matrícula *</label>
+          <input id="op-new-matricula" placeholder="Ex: 00123" style="text-transform:uppercase">
+        </div>
+        <div class="fg">
+          <label>Nome Completo *</label>
+          <input id="op-new-name" placeholder="Ex: Ingrid Sousa" style="text-transform:uppercase">
+        </div>
+      </div>
+      <div id="op-senha-preview" style="margin-top:14px;background:rgba(247,147,30,0.08);border:1px solid rgba(247,147,30,0.2);border-radius:8px;padding:12px;font-size:.85rem;display:none">
+        🔑 Senha gerada: <b id="op-senha-val" style="color:var(--orange);font-size:1rem"></b>
+        <span style="color:var(--text3);font-size:.78rem;display:block;margin-top:4px">3 primeiras letras do nome + EMPRESA</span>
+      </div>
+    </div>
+    <div class="mf">
+      <button class="btn btn-outline" onclick="closeOverlay('m-operator')">Cancelar</button>
+      <button class="btn btn-accent" onclick="saveOperator()">💾 Salvar</button>
+    </div>
+  </div>
+</div>
+
+
+<div class="overlay" id="m-station">
+  <div class="modal">
+    <div class="mh"><span class="mt" id="station-modal-title">⛽ Novo Posto</span><button class="mc" onclick="closeOverlay('m-station')">✕</button></div>
+    <div class="mb">
+      <input type="hidden" id="st-id">
+      <div class="form-grid">
+        <div class="fg"><label>Nome do Posto *</label><input id="st-name" placeholder="Ex: Posto Shell"></div>
+        <div class="fg"><label>Cidade *</label>
+          <input id="st-city" list="cities-list" placeholder="Ex: Santarém">
+          <datalist id="cities-list"></datalist>
+        </div>
+      </div>
+    </div>
+    <div class="mf">
+      <button class="btn btn-outline" onclick="closeOverlay('m-station')">Cancelar</button>
+      <button class="btn btn-accent" onclick="saveStation()">💾 Salvar</button>
+    </div>
+  </div>
+</div>
+
+
+
+<!-- Nova Requisição -->
+<div class="overlay" id="m-new-req">
+  <div class="modal lg">
+    <div class="mh"><span class="mt">⛽ Nova Requisição de Abastecimento</span><button class="mc" onclick="closeOverlay('m-new-req')">✕</button></div>
+    <div id="bh-banner" style="display:none;margin:16px 24px 0;padding:12px 16px;border-radius:10px;font-size:.85rem;font-weight:600"></div>
+    <div class="mb">
+      <div class="fsec"><span class="fsec-title">Identificação</span>
+        <div class="fr">
+          <div class="fg"><label>Motorista</label><input id="rq-drv" readonly></div>
+          <div class="fg"><label>Prioridade</label>
+            <select id="rq-pri"><option value="normal">🟢 Normal</option><option value="urgent">🟡 Urgente</option><option value="emergency">🔴 Emergência</option></select>
+          </div>
+        </div>
+      </div>
+      <div class="fsec" id="fsec-veiculo"><span class="fsec-title">Veículo / Equipamento</span>
+        <div class="fr">
+          <div class="fg"><label>Placa / Código *</label><select id="rq-plate" onchange="onPlate()"><option value="">Selecione...</option></select></div>
+          <div class="fg"><label>Modelo</label><input id="rq-model" readonly placeholder="Preenchido ao selecionar placa"></div>
+        </div>
+        <div class="fr" style="margin-top:14px">
+          <div class="fg"><label>KM atual / Horímetro *</label><input id="rq-km" placeholder="Ex: 45230 ou 1250h"></div>
+        </div>
+      </div>
+      <div class="fsec"><span class="fsec-title">Dados do Abastecimento</span>
+        <div class="fr">
+          <div class="fg"><label>Posto *</label><select id="rq-stn" onchange="onStation()"><option value="">Selecione o posto...</option></select></div>
+          <div class="fg"><label>Cidade *</label><input id="rq-city" readonly placeholder="Preenchida ao selecionar posto"></div>
+        </div>
+        <div class="fr" style="margin-top:14px">
+          <div class="fg"><label>Combustível *</label><select id="rq-fuel"><option value="">Selecione...</option></select></div>
+        </div>
+        <div class="fr" style="margin-top:14px">
+          <div class="fg"><label>Método de Abastecimento *</label>
+            <select id="rq-mth" onchange="onMthChange()">
+              <option value="litros">🧪 Litros — Informar quantidade</option>
+              <option value="valor">💰 Valor — Informar em R$</option>
+              <option value="bombona">🛢️ Bombona — Abastecer minha bombona</option>
+            </select>
+          </div>
+          <div class="fg" id="fg-preco-litro">
+            <label>Preço atual do combustível (R$/L) *</label>
+            <div style="position:relative">
+              <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text3);font-weight:700;pointer-events:none">R$</span>
+              <input type="number" id="rq-preco-litro" step="0.01" min="0" placeholder="0.00" style="padding-left:36px" oninput="calcReqTotal()">
+            </div>
+          </div>
+        </div>
+        <!-- Campos dinâmicos por método -->
+        <div id="fg-mth-fields" style="margin-top:14px">
+          <!-- Litros -->
+          <div id="fg-litros">
+            <div class="fg">
+              <label>Quantidade (L) *</label>
+              <input type="number" id="rq-litros" step="0.1" min="0" placeholder="0.0" oninput="calcReqTotal()">
+              <input id="rq-total-calc" type="hidden">
+            </div>
+          </div>
+          <!-- Valor -->
+          <div id="fg-valor" class="fr hidden">
+            <div class="fg">
+              <label>Valor a Abastecer (R$) *</label>
+              <div style="position:relative">
+                <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text3);font-weight:700;pointer-events:none">R$</span>
+                <input type="number" id="rq-valor" step="0.01" min="0" placeholder="0.00" style="padding-left:36px" oninput="calcReqTotal()">
+              </div>
+            </div>
+            <input id="rq-litros-calc" type="hidden">
+          </div>
+        </div>
+        <!-- Info bombona -->
+        <div id="bombona-info-box" class="hidden" style="margin-top:12px;background:rgba(168,85,247,0.08);border:1px solid rgba(168,85,247,0.25);border-radius:10px;padding:14px;font-size:.83rem;color:var(--text2)">
+          🛢️ <b style="color:#C084FC">Requisição para Abastecer Bombona</b><br>
+          <span style="color:var(--text3)">Solicite o abastecimento da sua bombona no posto. Informe quantos litros precisa e o preço estimado.</span>
+          <div class="fg" style="margin-top:12px"><label>Bombona a ser abastecida *</label>
+            <select id="rq-bombona-sel"><option value="">Selecione a bombona...</option></select>
+          </div>
+          <div class="fr" style="margin-top:12px">
+            <div class="fg">
+              <label>Litros a Abastecer *</label>
+              <input type="number" id="rq-bombona-litros" step="1" min="1" placeholder="Ex: 200" oninput="calcReqTotal()">
+            </div>
+            <div class="fg">
+              <label>Preço Estimado (R$/L)</label>
+              <div style="position:relative">
+                <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text3);font-weight:700;pointer-events:none">R$</span>
+                <input type="number" id="rq-bombona-preco" step="0.01" min="0" placeholder="0.00" style="padding-left:36px" oninput="calcReqTotal()">
+              </div>
+            </div>
+          </div>
+          <div class="fg" style="margin-top:10px">
+            <label>Valor Estimado Total</label>
+            <input id="rq-bombona-total" readonly placeholder="—" style="font-weight:700;color:var(--green)">
+          </div>
+        </div>
+        <div class="fg" style="margin-top:14px">
+            <label>Observações / Destino do Combustível <span style="color:var(--red)">*</span></label>
+            <textarea id="rq-notes" rows="3" placeholder="Obrigatório — Informe o destino do combustível. Ex: Abastecimento da escavadeira PT-07 para operação em Lago Grande, frente de obra do contrato X..."></textarea>
+          </div>
+      </div>
+      <div class="fsec"><span class="fsec-title">📸 Fotos — enviadas ao SharePoint automaticamente</span>
+        <p style="font-size:.78rem;color:var(--text3);margin-bottom:14px">Salvas em: <code>Sistema Abastecimento / [Seu Nome] / [Data]</code></p>
+        <div class="fr">
+          <div>
+            <div class="ph-lbl" id="rq-hori-lbl">📸 Foto do Painel do Veículo *</div>
+            <label class="pu" id="pu-hori">
+              <input type="file" id="f-hori" accept="image/*" onchange="previewPU(this,'pu-hori')">
+              <span class="pu-label">📷 Foto do painel do veículo</span>
+              <div class="pu-btns">
+                <span class="pu-btn-cam">📷 Câmera</span>
+                <span class="pu-btn-gal">🖼️ Galeria</span>
+              </div>
+            </label>
+          </div>
+          <div>
+            <div class="ph-lbl" id="rq-veh-lbl">📸 Foto da Placa do Veículo *</div>
+            <label class="pu" id="pu-veh">
+              <input type="file" id="f-veh" accept="image/*" onchange="previewPU(this,'pu-veh')">
+              <span class="pu-label">📷 Foto da placa do veículo</span>
+              <div class="pu-btns">
+                <span class="pu-btn-cam">📷 Câmera</span>
+                <span class="pu-btn-gal">🖼️ Galeria</span>
+              </div>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="mf">
+      <button class="btn btn-outline" onclick="closeOverlay('m-new-req')">Cancelar</button>
+      <button class="btn btn-accent" onclick="createReq()">📤 Enviar Requisição</button>
+    </div>
+  </div>
+</div>
+
+<!-- Completar Abastecimento -->
+<div class="overlay" id="m-complete">
+  <div class="modal lg">
+    <div class="mh"><span class="mt">⛽ Atualizar Valores do Abastecimento</span><button class="mc" onclick="closeOverlay('m-complete')">✕</button></div>
+    <div class="mb">
+      <input type="hidden" id="cp-id">
+
+      <div id="cp-req-info" style="background:rgba(247,147,30,0.07);border:1px solid rgba(247,147,30,0.2);border-radius:10px;padding:14px;margin-bottom:18px;font-size:.85rem"></div>
+
+      <!-- Seção Bombona (visível só quando método=bombona) -->
+      <div id="cp-bombona-sec" class="hidden">
+        <span class="fsec-title">🛢️ Bombona Utilizada</span>
+        <div class="fr" style="margin-top:12px">
+          <div class="fg">
+            <label>Selecione a Bombona *</label>
+            <select id="cp-bombona-sel" onchange="onCpBombonaChange()"><option value="">Selecione...</option></select>
+          </div>
+          <div class="fg">
+            <label>Saldo Disponível</label>
+            <input id="cp-bombona-saldo" readonly placeholder="—" style="color:var(--green);font-weight:700">
+          </div>
+        </div>
+      </div>
+
+      <span class="fsec-title" style="margin-top:8px;display:block">✏️ Valores Reais do Abastecimento</span>
+
+      <div class="fr" style="margin-top:12px">
+        <div class="fg">
+          <label>Combustível</label>
+          <input id="cp-fuel" readonly>
+        </div>
+        <div class="fg">
+          <label>Preço por Litro (R$/L) *</label>
+          <div style="position:relative">
+            <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text3);font-weight:700;pointer-events:none">R$</span>
+            <input type="number" id="cp-price" step="0.01" min="0" placeholder="0.00" style="padding-left:36px" oninput="calcTotal()">
+          </div>
+          <div id="cp-price-hint" style="font-size:.72rem;color:var(--text3);margin-top:4px"></div>
+        </div>
+      </div>
+
+      <div class="fr" style="margin-top:14px">
+        <div class="fg">
+          <label>Litros Abastecidos *</label>
+          <input type="number" id="cp-liters" step="0.1" min="0" placeholder="0.0" oninput="calcTotal()">
+          <div id="cp-liters-hint" style="font-size:.72rem;color:var(--text3);margin-top:4px"></div>
+        </div>
+        <div class="fg">
+          <label>Valor Total Real</label>
+          <input id="cp-total" readonly placeholder="—" style="font-weight:800;font-size:1.1rem;color:var(--green)">
+        </div>
+      </div>
+
+      <div class="fg" style="margin-top:14px">
+        <label>Observações do Gestor</label>
+        <textarea id="cp-notes" rows="2" placeholder="Diferenças, ocorrências, observações..."></textarea>
+      </div>
+
+      <!-- Aviso sobre fotos do motorista -->
+      <div id="cp-fotos-status" style="margin-top:16px;padding:12px 16px;border-radius:10px;font-size:.85rem"></div>
+    </div>
+    <div class="mf">
+      <button class="btn btn-outline" onclick="closeOverlay('m-complete')">Cancelar</button>
+      <button class="btn btn-warning" onclick="updateReqValues()" title="Atualiza os valores e gera novo PDF Aprovado — aguarda fotos do motorista">📄 Salvar Valores</button>
+      <button class="btn btn-success" onclick="submitComplete()" title="Conclui a requisição e gera PDF Concluído">✅ Concluir</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Motorista envia fotos pós-abastecimento -->
+<div class="overlay" id="m-driver-photos">
+  <div class="modal lg">
+    <div class="mh"><span class="mt">📸 Registrar Fotos do Abastecimento</span><button class="mc" onclick="closeOverlay('m-driver-photos')">✕</button></div>
+    <div class="mb">
+      <input type="hidden" id="dp-id">
+      <input type="hidden" id="dp-method">
+      <div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.25);border-radius:10px;padding:14px;margin-bottom:12px;font-size:.85rem">
+        ✅ Sua requisição foi <b>aprovada</b>. Após realizar o abastecimento, envie as fotos abaixo para que o supervisor possa concluir o processo.
+      </div>
+      <div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);border-radius:10px;padding:12px;margin-bottom:18px;font-size:.83rem;color:var(--red)">
+        ⏰ <b>Atenção:</b> Você tem <b>24 horas</b> para enviar as fotos. Após esse prazo, sua segunda requisição será <b>bloqueada automaticamente</b> até o envio das fotos desta.
+      </div>
+      <div id="dp-req-info" style="background:rgba(247,147,30,0.07);border:1px solid rgba(247,147,30,0.2);border-radius:10px;padding:14px;margin-bottom:18px;font-size:.85rem"></div>
+      <span class="fsec-title">📸 Fotos Obrigatórias do Abastecimento</span>
+      <p style="font-size:.78rem;color:var(--text3);margin:8px 0 14px">Tire as fotos no momento do abastecimento e envie aqui. Salvas no SharePoint automaticamente.</p>
+      <div class="fr3">
+        <div>
+          <div class="ph-lbl">⛽ Foto da Bomba / Bico <span style="color:var(--red)">*</span></div>
+          <label class="pu" id="pu-dp-pump">
+            <input type="file" id="dp-f-pump" accept="image/*" onchange="previewPU(this,'pu-dp-pump')">
+            <span class="pu-label">📷 Foto do bico da bomba mostrando a quantidade</span>
+          </label>
+        </div>
+        <div>
+          <div class="ph-lbl">🧾 Cupom Fiscal / Nota <span style="color:var(--red)">*</span></div>
+          <label class="pu" id="pu-dp-receipt">
+            <input type="file" id="dp-f-receipt" accept="image/*" onchange="previewPU(this,'pu-dp-receipt')">
+            <span class="pu-label">📷 Foto do cupom fiscal ou nota do posto</span>
+          </label>
+        </div>
+        <div>
+          <div class="ph-lbl" id="dp-panel-lbl">📸 Foto do Painel / Carote <span style="color:var(--red)">*</span></div>
+          <label class="pu" id="pu-dp-panel">
+            <input type="file" id="dp-f-panel" accept="image/*" onchange="previewPU(this,'pu-dp-panel')">
+            <span class="pu-label" id="dp-panel-hint">📷 Foto do painel do veículo após o abastecimento</span>
+          </label>
+        </div>
+      </div>
+    </div>
+    <div class="mf">
+      <button class="btn btn-outline" onclick="closeOverlay('m-driver-photos')">Cancelar</button>
+      <button class="btn btn-accent" onclick="submitDriverPhotos()">📤 Enviar Fotos</button>
+    </div>
+  </div>
+</div>
+
+<!-- Ver Requisição -->
+<div class="overlay" id="m-view">
+  <div class="modal lg">
+    <div class="mh"><span class="mt" id="v-title">Detalhes</span><button class="mc" onclick="closeOverlay('m-view')">✕</button></div>
+    <div class="mb" id="v-body"></div>
+    <div class="mf">
+      <button class="btn btn-outline" onclick="closeOverlay('m-view')">Fechar</button>
+      <button class="btn btn-danger hidden" id="v-pdf">📄 Baixar PDF</button>
+    </div>
+  </div>
+</div>
+
+<!-- Nova Bombona -->
+<div class="overlay" id="m-nb">
+  <div class="modal">
+    <div class="mh"><span class="mt">🛢️ Nova Bombona</span><button class="mc" onclick="closeOverlay('m-nb')">✕</button></div>
+    <div class="mb">
+      <div class="form-grid">
+        <div class="fg"><label>Nome / Identificação *</label><input id="nb-name" placeholder="Ex: BOMBONA 200L — Lago Grande"></div>
+        <div class="fr">
+          <div class="fg"><label>Combustível *</label>
+            <select id="nb-fuel">
+              <option value="Diesel S10">Diesel S10</option><option value="Diesel Comum">Diesel Comum</option>
+              <option value="Gasolina Comum">Gasolina Comum</option><option value="Gasolina Aditivada">Gasolina Aditivada</option>
+            </select>
+          </div>
+          <div class="fg"><label>Capacidade (L) *</label><input type="number" id="nb-cap" placeholder="200" step="1" min="1"></div>
+        </div>
+        <div class="fr">
+          <div class="fg"><label>Saldo Atual (L)</label><input type="number" id="nb-cur" placeholder="0" step="0.1"></div>
+          <div class="fg"><label>Localidade</label><input id="nb-loc" placeholder="Ex: Lago Grande"></div>
+        </div>
+        <div class="fg"><label>Responsável *</label><select id="nb-resp"><option value="">Selecione...</option></select></div>
+        <div class="fg"><label>Observações</label><textarea id="nb-notes" rows="2" placeholder="Informações extras..."></textarea></div>
+      </div>
+    </div>
+    <div class="mf">
+      <button class="btn btn-outline" onclick="closeOverlay('m-nb')">Cancelar</button>
+      <button class="btn btn-accent" onclick="saveBombona()">💾 Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Transferência Bombona -->
+<div class="overlay" id="m-tf">
+  <div class="modal lg">
+    <div class="mh"><span class="mt" id="tf-title">🔄 Transferência</span><button class="mc" onclick="closeOverlay('m-tf')">✕</button></div>
+    <div class="mb">
+      <input type="hidden" id="tf-bid">
+      <div id="tf-info" style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:10px;padding:14px;margin-bottom:18px;font-size:.9rem"></div>
+      <div class="fsec"><span class="fsec-title">Destino</span>
+        <div class="fr">
+          <div class="fg"><label>Colaborador Responsável *</label><select id="tf-driver"><option value="">Selecione o colaborador...</option></select></div>
+        </div>
+        <div class="fr" style="margin-top:14px">
+          <div class="fg"><label>Veículo / Equipamento</label><select id="tf-vpl" onchange="onTfVeh()"><option value="">Nenhum (apenas saída)</option></select></div>
+          <div class="fg"><label>Modelo</label><input id="tf-vmod" readonly></div>
+        </div>
+        <div class="fr" style="margin-top:14px">
+          <div class="fg"><label>Litros a Transferir *</label><input type="number" id="tf-liters" step="0.1" min="0.1" placeholder="0.0"></div>
+          <div class="fg"><label>Data</label><input type="date" id="tf-date"></div>
+        </div>
+        <div class="fr hidden" id="tf-km-row" style="margin-top:14px">
+          <div class="fg"><label>KM Atual do Veículo <span style="color:var(--text3);font-weight:400">(opcional, mas vira checagem de consumo na auditoria)</span></label>
+            <input type="number" id="tf-km" placeholder="Ex: 45680" oninput="onTfKmInput()">
+            <div id="tf-km-hint" style="font-size:.75rem;margin-top:4px"></div>
+          </div>
+        </div>
+        <div class="fg" style="margin-top:14px"><label>Observações</label><textarea id="tf-notes" rows="2" placeholder="Notas sobre a transferência..."></textarea></div>
+      </div>
+      <div class="fsec"><span class="fsec-title">📸 Fotos — SharePoint pasta do colaborador</span>
+        <p style="font-size:.78rem;color:var(--text3);margin-bottom:14px">Salvas em: <code>Sistema Abastecimento / [Nome] / [Data]</code></p>
+        <div class="fr3">
+          <div><div class="ph-lbl">Antes da transferência</div><label class="pu" id="pu-tf1"><input type="file" id="tf-f1" accept="image/*" onchange="previewPU(this,'pu-tf1')"><span class="pu-label">📷 Foto antes</span></label></div>
+          <div><div class="ph-lbl">Depois da transferência</div><label class="pu" id="pu-tf2"><input type="file" id="tf-f2" accept="image/*" onchange="previewPU(this,'pu-tf2')"><span class="pu-label">📷 Foto depois</span></label></div>
+          <div><div class="ph-lbl">Veículo abastecido</div><label class="pu" id="pu-tf3"><input type="file" id="tf-f3" accept="image/*" onchange="previewPU(this,'pu-tf3')"><span class="pu-label">📷 Foto veículo</span></label></div>
+        </div>
+      </div>
+    </div>
+    <div class="mf">
+      <button class="btn btn-outline" onclick="closeOverlay('m-tf')">Cancelar</button>
+      <button class="btn btn-accent" onclick="submitTf()">🔄 Confirmar Transferência</button>
+    </div>
+  </div>
+</div>
+
+<!-- Reabastecer Bombona -->
+<div class="overlay" id="m-refill">
+  <div class="modal">
+    <div class="mh"><span class="mt">➕ Reabastecer Bombona</span><button class="mc" onclick="closeOverlay('m-refill')">✕</button></div>
+    <div class="mb">
+      <input type="hidden" id="rf-id">
+      <div id="rf-info" style="background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);border-radius:10px;padding:14px;margin-bottom:16px;font-size:.9rem"></div>
+      <div class="fg"><label>Litros a Adicionar *</label><input type="number" id="rf-liters" step="0.1" min="1" placeholder="0.0"></div>
+    </div>
+    <div class="mf">
+      <button class="btn btn-outline" onclick="closeOverlay('m-refill')">Cancelar</button>
+      <button class="btn btn-success" onclick="submitRefill()">➕ Adicionar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Novo Veículo -->
+<div class="overlay" id="m-nv">
+  <div class="modal lg">
+    <div class="mh"><span class="mt" id="nv-modal-title">🚗 Adicionar Veículo / Equipamento</span><button class="mc" onclick="closeOverlay('m-nv')">✕</button></div>
+    <div class="mb">
+      <div class="fr"><div class="fg"><label>Placa / Código *</label><input id="nv-pl" placeholder="ABC1234"></div><div class="fg"><label>ID Equipamento</label><input id="nv-eq" placeholder="PT01"></div></div>
+      <div class="fr" style="margin-top:14px"><div class="fg"><label>Marca</label><input id="nv-br" placeholder="FORD"></div><div class="fg"><label>Modelo *</label><input id="nv-md" placeholder="CARGO 1217"></div></div>
+      <div class="fr" style="margin-top:14px">
+        <div class="fg"><label>Tipo</label><select id="nv-tp"><option>4X4</option><option>CAMINHÃO</option><option>PICK UP</option><option>EMBARCAÇÃO</option><option>RETROESCAVADEIRA</option><option>TRATOR</option><option>MOTO</option><option>VAN</option><option>LEVE</option><option>GERADOR</option><option>OUTRO</option></select></div>
+        <div class="fg"><label>Setor</label><select id="nv-se"><option>OPERAÇÃO</option><option>OFICINA</option><option>ADM</option><option>DIRETORIA</option></select></div>
+      </div>
+      <div class="fr" style="margin-top:14px"><div class="fg"><label>Ano</label><input id="nv-yr" placeholder="2024"></div><div class="fg"><label>Cor</label><input id="nv-co" placeholder="BRANCA"></div></div>
+      <div class="fr" style="margin-top:14px">
+        <div class="fg"><label>Combustível</label><select id="nv-ft"><option>DIESEL</option><option>GASOLINA</option><option>FLEX</option><option>GNV</option></select></div>
+        <div class="fg"><label>Tanque (L)</label><input type="number" id="nv-tk" placeholder="80"></div>
+      </div>
+      <div class="fr" style="margin-top:14px">
+        <div class="fg"><label>Consumo Médio de Referência (km/L ou h/L) — digitado à mão, não calculado. O real fica em "Consumo Médio" no menu.</label><input type="number" id="nv-cs" step="0.1" placeholder="10.0"></div>
+        <div class="fg"><label>Localidade</label><input id="nv-lc" placeholder="SANTARÉM"></div>
+      </div>
+      <div class="fr" style="margin-top:14px">
+        <div class="fg"><label>Propriedade</label><select id="nv-ow"><option>PROPRIO</option><option>LOCADO</option></select></div>
+        <div class="fg"><label>Locadora (se locado)</label><input id="nv-ls" placeholder="Nome da locadora"></div>
+      </div>
+    </div>
+    <div class="mf">
+      <button class="btn btn-outline" onclick="closeOverlay('m-nv')">Cancelar</button>
+      <button class="btn btn-accent" onclick="saveVeh()">💾 Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Preços -->
+<div class="overlay" id="m-prices">
+  <div class="modal">
+    <div class="mh"><span class="mt">💰 Atualizar Preços de Combustível</span><button class="mc" onclick="closeOverlay('m-prices')">✕</button></div>
+    <div class="mb" id="prices-body"></div>
+    <div class="mf">
+      <button class="btn btn-outline" onclick="closeOverlay('m-prices')">Cancelar</button>
+      <button class="btn btn-success" onclick="savePrices()">💾 Salvar Preços</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
+<script src="app.js"></script>
+
+<!-- Modal Lançamento Retroativo -->
+<div class="overlay" id="m-retroativo">
+  <div class="modal" style="max-width:560px;width:95%">
+    <div class="mh" style="background:var(--navy)">
+      <span class="mt" style="display:flex;align-items:center;gap:8px">🕐 Lançamento Retroativo <span style="font-size:.75rem;background:var(--orange);color:#fff;padding:2px 8px;border-radius:20px;font-weight:600">Concluído direto</span></span>
+      <button class="mc" onclick="closeOverlay('m-retroativo')">✕</button>
+    </div>
+    <div class="mb" style="padding:18px 20px">
+      <div style="background:#fff8f0;border:1px solid #fddcb0;border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:.82rem;color:#92400e">
+        ⚠️ Esta requisição será inserida diretamente como <b>Concluída</b>, sem passar pelo fluxo de aprovação. Use apenas para registros do mês passado ou anteriores.
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="fg" style="grid-column:1/-1">
+          <label>Motorista / Operador *</label>
+          <select id="rt-driver" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:6px;background:var(--bg2)">
+            <option value="">Selecionar...</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label>Data do Abastecimento *</label>
+          <input type="date" id="rt-date" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:6px;background:var(--bg2)">
+        </div>
+        <div class="fg">
+          <label>Placa / Equipamento *</label>
+          <select id="rt-plate" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:6px;background:var(--bg2)">
+            <option value="">Selecionar...</option>
+          </select>
+        </div>
+        <div class="fg" style="grid-column:1/-1">
+          <label>Veículo (modelo) *</label>
+          <input type="text" id="rt-vehicle" placeholder="Ex: L200 TRITON 3.2 D" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:6px;background:var(--bg2)">
+        </div>
+        <div class="fg">
+          <label>Cidade</label>
+          <input type="text" id="rt-city" placeholder="Ex: Santarém" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:6px;background:var(--bg2)">
+        </div>
+        <div class="fg">
+          <label>Posto</label>
+          <select id="rt-station" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:6px;background:var(--bg2)">
+            <option value="">Selecionar...</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label>Combustível</label>
+          <select id="rt-fuel" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:6px;background:var(--bg2)">
+            <option>Diesel S10</option>
+            <option>Diesel Comum</option>
+            <option>Gasolina Comum</option>
+            <option>Gasolina Aditivada</option>
+            <option>Etanol</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label>Método</label>
+          <select id="rt-method" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:6px;background:var(--bg2)">
+            <option value="tanque">Tanque Completo</option>
+            <option value="galao">Galão</option>
+            <option value="bombona">Bombona</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label>Litros</label>
+          <input type="number" id="rt-liters" step="0.1" placeholder="Ex: 45.5" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:6px;background:var(--bg2)">
+        </div>
+        <div class="fg">
+          <label>Preço / Litro (R$)</label>
+          <input type="number" id="rt-ppl" step="0.001" placeholder="Ex: 6.69" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:6px;background:var(--bg2)">
+        </div>
+        <div class="fg">
+          <label>Valor Total (R$) *</label>
+          <input type="text" id="rt-value" placeholder="Ex: R$ 304,95" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:6px;background:var(--bg2)">
+        </div>
+        <div class="fg">
+          <label>KM / Horímetro</label>
+          <input type="number" id="rt-km" placeholder="KM atual" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:6px;background:var(--bg2)">
+        </div>
+        <div class="fg" style="grid-column:1/-1">
+          <label>Observações</label>
+          <textarea id="rt-notes" rows="2" placeholder="Observações opcionais..." style="width:100%;padding:9px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);resize:vertical"></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="mf" style="display:flex;gap:10px;justify-content:flex-end;padding:14px 20px;border-top:1px solid var(--border)">
+      <button class="btn btn-outline" onclick="closeOverlay('m-retroativo')">Cancelar</button>
+      <button class="btn btn-accent" onclick="submitRetroativo()" id="rt-submit-btn">✓ Lançar como Concluído</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
